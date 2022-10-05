@@ -1,0 +1,39 @@
+#!/usr/bin/env  bash
+
+# A very particular script that take JSON input and invokes
+# a custom AWS Lambda function to post that JSON to a Google
+# calendar shared by our DevOps team
+
+# Requires AWS CLI, credentials, and permissions to invoke the
+# function
+
+if [ $# -ne 1 ]; then
+  echo 1>&2 "Usage: ${0##*/} '<escaped-json-string-for-calendar>'"
+  exit 1
+fi
+
+# take the whole payload and assume it will be single-quoted
+PAYLOAD=$1
+
+# off we go
+RESULT=$(aws lambda invoke \
+    --cli-binary-format raw-in-base64-out \
+    --function-name caen-devops-events-google \
+    --payload "${PAYLOAD}" /tmp/log)
+
+# oh no, what did we just do?
+
+# echo $?
+# echo "$RESULT"
+# cat /tmp/log
+
+if [[ $RESULT == *"\"StatusCode\": 200,"* ]]; then
+  echo " >>> Success!"
+  echo " >>> Calendar updated ✅"
+  exit 0
+else
+  echo " --- Oops.  Something went wrong 😦"
+  echo "$RESULT"
+  exit 1
+fi
+
